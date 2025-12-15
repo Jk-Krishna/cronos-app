@@ -1,13 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import type { HTMLMotionProps } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 // --- BUTTON ---
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   isLoading?: boolean;
   icon?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
+  children?: React.ReactNode;
 }
 
 export const Button: React.FC<ButtonProps> = ({ 
@@ -19,12 +21,12 @@ export const Button: React.FC<ButtonProps> = ({
   className = '', 
   ...props 
 }) => {
-  const baseStyle = "relative inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-[#0f172a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg";
+  const baseStyle = "relative inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-[#0f172a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg active:scale-95";
   
   const sizes = {
-    sm: "px-3 py-1.5 text-xs",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-base",
+    sm: "px-3 py-2 text-xs", // Increased vertical padding for touch
+    md: "px-4 py-2.5 text-sm",
+    lg: "px-6 py-3.5 text-base",
   };
 
   const variants = {
@@ -35,7 +37,6 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    // @ts-ignore - framer-motion and React have conflicting event handler types
     <motion.button
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.98 }}
@@ -43,7 +44,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <Loader2 className="w-3 h-3 mr-2 animate-spin" />}
+      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
       {!isLoading && icon && <span className="mr-2 flex items-center">{icon}</span>}
       {children}
     </motion.button>
@@ -60,7 +61,7 @@ export const Input: React.FC<InputProps> = ({ label, className = '', ...props })
     <div className="w-full">
       {label && <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-0.5">{label}</label>}
       <input
-        className={`w-full bg-surface/50 border border-slate-700 text-white px-3 py-2.5 text-sm rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-slate-600 ${className}`}
+        className={`w-full bg-surface/50 border border-slate-700 text-white px-3 py-3 text-base sm:text-sm rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-slate-600 ${className}`}
         {...props}
       />
     </div>

@@ -1,34 +1,45 @@
-export type UserRole = 'ADMIN' | 'CLIENT';
-
 export type ViewState = 
-  | 'HOME' 
-  | 'LOGIN_CLIENT' 
-  | 'LOGIN_ADMIN' 
-  | 'CLIENT_DASHBOARD' 
-  | 'ADMIN_DASHBOARD' 
-  | 'ADMIN_ANALYTICS';
+  | 'LOGIN' 
+  | 'REGISTER'
+  | 'ADMIN_LOGIN'
+  | 'USER_HOME' 
+  | 'ADMIN_DASHBOARD';
 
-export interface Client {
-  id: string;
-  name: string;
-  email: string; // Used as ID for login
-  avatar: string;
+export interface Admin {
+  id: string; // 'admin'
+  password: string; // 'admin'
 }
 
-export interface Task {
+export interface TaskDefinition {
   id: string;
-  clientId: string;
+  title: string;
+  defaultTime: string; // HH:MM
+  isDefault: boolean; // True if created by admin
+}
+
+export interface TaskInstance {
+  id: string;
+  defId?: string; // Link to definition if default
   title: string;
   description: string;
-  time: string; // "HH:MM" 24h format
+  time: string; // HH:MM
   status: 'PENDING' | 'COMPLETED' | 'MISSED';
   date: string; // YYYY-MM-DD
-  completedAt?: string;
+  isDefault: boolean; // Preserved from definition for quick checks
 }
 
-export interface DailyStats {
-  date: string;
-  completed: number;
-  missed: number;
-  total: number;
+export interface UserProfile {
+  id: string;
+  name: string;
+  avatar: string;
+  tasks: TaskInstance[];
 }
+
+export interface UserGroup {
+  id: string; // The "USER ID" used for login
+  password: string;
+  profiles: UserProfile[]; // "You", "User 1", etc.
+}
+
+export type Client = UserProfile;
+export type Task = TaskInstance;
