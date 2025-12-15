@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft, Shield, Sparkles } from 'lucide-react';
 import { Button, Input, Card } from '../components/UI';
 import { ADMIN_CREDS } from '../services/store';
 
@@ -15,8 +15,7 @@ interface LoginProps {
 type AuthMode = 'LOGIN' | 'REGISTER' | 'RESET';
 
 const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, store }) => {
-  const [authMode, setAuthMode] = useState<AuthMode>('LOGIN'); // Replaces isRegistering boolean
-  
+  const [authMode, setAuthMode] = useState<AuthMode>('LOGIN'); 
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,17 +30,15 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
     setTimeout(() => {
       setLoading(false);
       
-      // --- ADMIN LOGIN ---
       if (mode === 'ADMIN') {
         if (userId === ADMIN_CREDS.id && password === ADMIN_CREDS.password) {
           onLogin();
         } else {
-          setError('Invalid Admin Credentials');
+          setError('Admin Access Denied');
         }
         return;
       }
 
-      // --- USER FLOWS ---
       if (authMode === 'RESET') {
         if (password !== confirmPassword) {
           setError("Passwords don't match");
@@ -49,7 +46,7 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
         }
         const success = store.resetGroupPassword(userId, password);
         if (success) {
-          alert('Password reset successful! Please login.');
+          alert('Key updated successfully.');
           setAuthMode('LOGIN');
           setPassword('');
           setConfirmPassword('');
@@ -65,159 +62,157 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
           return;
         }
         if (userId.length < 3) {
-          setError("User ID too short");
+          setError("ID is too short");
           return;
         }
         const success = store.addGroup(userId, password);
         if (success) {
-          alert('Registration successful! Please login.');
+          alert('Welcome aboard!');
           setAuthMode('LOGIN');
         } else {
-          setError('User ID already exists');
+          setError('This ID is taken');
         }
         return;
       }
 
-      // Default: LOGIN
       const group = store.getGroup(userId);
       if (group && group.password === password) {
         onLogin(group);
       } else {
-        setError('Invalid User ID or Password');
+        setError('Incorrect ID or Password');
       }
-    }, 600);
-  };
-
-  const getTitle = () => {
-    if (mode === 'ADMIN') return 'Admin Access';
-    switch (authMode) {
-      case 'REGISTER': return 'New Account';
-      case 'RESET': return 'Reset Password';
-      default: return 'Welcome Back';
-    }
-  };
-
-  const getDescription = () => {
-    if (mode === 'ADMIN') return 'Secure system configuration.';
-    switch (authMode) {
-      case 'REGISTER': return 'Create your group ID to get started.';
-      case 'RESET': return 'Enter your ID and new password.';
-      default: return 'Please sign in to continue.';
-    }
+    }, 800);
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 relative overflow-y-auto min-h-full">
-      {/* Top Right Admin Button */}
+    <div className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      
+      {/* Floating Header Actions */}
       {mode === 'USER' && (
-        <div className="absolute top-4 right-4 z-20">
-          <Button variant="ghost" size="sm" onClick={onAdminClick} className="text-slate-500 hover:text-white bg-slate-900/50 backdrop-blur-sm">
-            <Shield size={16} className="mr-1" /> Admin
+        <motion.div 
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="absolute top-6 right-6 z-20"
+        >
+          <Button variant="glass" size="sm" onClick={onAdminClick}>
+            <Shield size={16} className="mr-2 text-indigo-400" /> Admin
           </Button>
-        </div>
+        </motion.div>
       )}
 
-      <div className="w-full max-w-sm my-auto">
-        {mode === 'ADMIN' && (
-          <div className="flex items-center mb-6">
-             <Button variant="ghost" onClick={onBack} size="sm" className="pl-0 text-slate-500 hover:text-white">
-              <ArrowLeft size={16} className="mr-1" /> Back to User Login
-            </Button>
-          </div>
-        )}
-
-        <motion.div
-          key={authMode} // Animate on mode switch
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full"
+      {mode === 'ADMIN' && (
+        <motion.div 
+           initial={{ y: -50, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           className="absolute top-6 left-6 z-20"
         >
-          <Card className="border-t-2 border-t-primary shadow-2xl shadow-black/50">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                {getTitle()}
-              </h2>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                {getDescription()}
-              </p>
-            </div>
+           <Button variant="glass" onClick={onBack} size="sm">
+            <ArrowLeft size={16} className="mr-2" /> Back
+          </Button>
+        </motion.div>
+      )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Main Card */}
+      <motion.div
+        key={authMode} 
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        className="w-full max-w-[420px] z-10"
+      >
+        <div className="text-center mb-8">
+            <motion.div 
+              initial={{ scale: 0 }} 
+              animate={{ scale: 1 }} 
+              transition={{ delay: 0.1, type: "spring" }}
+              className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 mb-6 shadow-lg shadow-indigo-500/30 text-white"
+            >
+              <Sparkles size={28} fill="currentColor" className="opacity-90" />
+            </motion.div>
+            <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-zinc-400 tracking-tight mb-2">
+              {mode === 'ADMIN' ? 'Control Center' : (authMode === 'REGISTER' ? 'Join Cronos' : 'Welcome Back')}
+            </h1>
+            <p className="text-zinc-400 font-medium text-lg">
+              {mode === 'ADMIN' ? 'Secure Login' : (authMode === 'REGISTER' ? 'Start your journey.' : 'Your day, organized.')}
+            </p>
+        </div>
+
+        <Card className="!p-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <Input 
+              label={mode === 'ADMIN' ? "Administrator ID" : "Group Identity"}
+              placeholder="e.g. creative_team" 
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              required
+              autoFocus
+              autoComplete="off"
+            />
+            
+            <Input 
+              label={authMode === 'RESET' ? "New Secret Key" : "Secret Key"}
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            {(authMode === 'REGISTER' || authMode === 'RESET') && (
               <Input 
-                label={mode === 'ADMIN' ? "Admin ID" : "User ID"}
-                placeholder="Enter ID" 
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                required
-                autoFocus
-                autoComplete="off"
-              />
-              
-              <Input 
-                label={authMode === 'RESET' ? "New Password" : "Password"}
+                label="Confirm Key" 
                 type="password" 
                 placeholder="••••••••" 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
-
-              {(authMode === 'REGISTER' || authMode === 'RESET') && (
-                <Input 
-                  label="Confirm Password" 
-                  type="password" 
-                  placeholder="••••••••" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              )}
-
-              {error && (
-                <div className="text-rose-500 text-xs bg-rose-500/10 p-3 rounded-lg border border-rose-500/20">
-                  {error}
-                </div>
-              )}
-
-              <Button type="submit" isLoading={loading} className="w-full !mt-6" size="lg">
-                {mode === 'ADMIN' ? 'Login' : 
-                  (authMode === 'REGISTER' ? 'Create Account' : 
-                  (authMode === 'RESET' ? 'Reset Password' : 'Sign In'))}
-              </Button>
-            </form>
-
-            {mode === 'USER' && (
-              <div className="mt-6 flex flex-col gap-3 text-center border-t border-slate-700/50 pt-4">
-                {authMode === 'LOGIN' && (
-                  <>
-                    <button 
-                      onClick={() => { setAuthMode('RESET'); setError(''); setPassword(''); }}
-                      className="text-xs text-slate-400 hover:text-white transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                    <button 
-                      onClick={() => { setAuthMode('REGISTER'); setError(''); setPassword(''); }}
-                      className="text-sm text-primary hover:text-indigo-400 font-medium p-2 rounded hover:bg-white/5 transition-colors"
-                    >
-                      New User? Create ID
-                    </button>
-                  </>
-                )}
-                
-                {(authMode === 'REGISTER' || authMode === 'RESET') && (
-                   <button 
-                   onClick={() => { setAuthMode('LOGIN'); setError(''); setPassword(''); }}
-                   className="text-sm text-slate-400 hover:text-white font-medium p-2 rounded hover:bg-white/5 transition-colors"
-                 >
-                   Back to Login
-                 </button>
-                )}
-              </div>
             )}
-          </Card>
-        </motion.div>
-      </div>
+
+            {error && (
+              <motion.div 
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="text-red-400 text-sm font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20 flex items-center justify-center"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <Button type="submit" isLoading={loading} variant="gradient" className="w-full !py-3 shadow-lg shadow-indigo-500/20" size="lg">
+              {mode === 'ADMIN' ? 'Access Console' : 
+                (authMode === 'REGISTER' ? 'Create Account' : 
+                (authMode === 'RESET' ? 'Update Key' : 'Enter Space'))}
+            </Button>
+          </form>
+
+          {mode === 'USER' && (
+             <div className="mt-6 pt-6 border-t border-white/5 flex flex-col gap-3 text-center">
+               {authMode === 'LOGIN' && (
+                 <>
+                   <button 
+                     onClick={() => { setAuthMode('RESET'); setError(''); }}
+                     className="text-xs text-zinc-500 hover:text-white font-bold transition-colors"
+                   >
+                     Forgot Key?
+                   </button>
+                   <p className="text-sm text-zinc-500">
+                     No account? <button onClick={() => { setAuthMode('REGISTER'); setError(''); }} className="text-fuchsia-400 hover:text-fuchsia-300 font-bold transition-colors">Create One</button>
+                   </p>
+                 </>
+               )}
+               {(authMode === 'REGISTER' || authMode === 'RESET') && (
+                  <button 
+                  onClick={() => { setAuthMode('LOGIN'); setError(''); }}
+                  className="text-sm text-zinc-500 hover:text-white font-bold"
+                >
+                  Cancel
+                </button>
+               )}
+             </div>
+          )}
+        </Card>
+      </motion.div>
     </div>
   );
 };

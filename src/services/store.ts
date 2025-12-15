@@ -108,6 +108,40 @@ class Store {
     }
   }
 
+  // Admin: Add a specific task to a user profile
+  addTaskToProfile(groupId: string, profileId: string, title: string, time: string) {
+    const group = this.groups.find(g => g.id === groupId);
+    if (group) {
+      const profile = group.profiles.find(p => p.id === profileId);
+      if (profile) {
+        profile.tasks.push({
+          id: `admin-${Date.now()}`,
+          title,
+          description: 'Admin Assigned',
+          time,
+          status: 'PENDING',
+          date: new Date().toISOString().split('T')[0],
+          isDefault: true // Locked/Routine
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Admin: Delete a task from a profile
+  deleteTaskFromProfile(groupId: string, profileId: string, taskId: string) {
+    const group = this.groups.find(g => g.id === groupId);
+    if (group) {
+      const profile = group.profiles.find(p => p.id === profileId);
+      if (profile) {
+        profile.tasks = profile.tasks.filter(t => t.id !== taskId);
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Admin: Delete a profile from a group
   deleteProfileFromGroup(groupId: string, profileId: string) {
     const group = this.groups.find(g => g.id === groupId);

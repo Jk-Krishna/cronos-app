@@ -1,18 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { HTMLMotionProps } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 // --- BUTTON ---
-interface ButtonProps extends Omit<HTMLMotionProps<"button">, "ref"> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+type ButtonProps = Omit<React.ComponentProps<typeof motion.button>, "ref"> & {
+  children?: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass' | 'gradient';
   isLoading?: boolean;
   icon?: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
-  children?: React.ReactNode;
-}
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+};
 
-export const Button: React.FC<ButtonProps> = ({ 
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ 
   children, 
   variant = 'primary', 
   isLoading, 
@@ -20,36 +19,45 @@ export const Button: React.FC<ButtonProps> = ({
   size = 'md',
   className = '', 
   ...props 
-}) => {
-  const baseStyle = "relative inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-[#0f172a] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg active:scale-95";
+}, ref) => {
+  const baseStyle = "relative inline-flex items-center justify-center font-bold tracking-tight transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl overflow-hidden group";
   
   const sizes = {
-    sm: "px-3 py-2 text-xs", // Increased vertical padding for touch
-    md: "px-4 py-2.5 text-sm",
-    lg: "px-6 py-3.5 text-base",
+    sm: "px-4 py-2 text-xs", 
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-8 py-3 text-base",
+    xl: "px-10 py-4 text-lg",
   };
 
   const variants = {
-    primary: "bg-primary hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/20 focus:ring-primary",
-    secondary: "bg-surface border border-slate-700 text-slate-200 hover:bg-slate-700/80 focus:ring-slate-500",
-    danger: "bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-500/20 focus:ring-rose-500",
-    ghost: "bg-transparent text-slate-400 hover:text-white hover:bg-white/5",
+    primary: "bg-white text-black shadow-lg shadow-white/10 hover:bg-zinc-200",
+    gradient: "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 border border-white/10",
+    secondary: "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-white/30 hover:text-white hover:bg-zinc-800",
+    danger: "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40",
+    ghost: "bg-transparent text-zinc-400 hover:text-white hover:bg-white/5",
+    glass: "bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10",
   };
 
   return (
     <motion.button
-      whileHover={{ scale: 1.01 }}
+      ref={ref}
+      whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-      {!isLoading && icon && <span className="mr-2 flex items-center">{icon}</span>}
-      {children}
+      <span className="relative z-10 flex items-center">
+        {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+        {!isLoading && icon && <span className="mr-2 flex items-center">{icon}</span>}
+        {children}
+      </span>
+      {/* Gloss Effect */}
+      {variant !== 'ghost' && <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />}
     </motion.button>
   );
-};
+});
+Button.displayName = "Button";
 
 // --- INPUT ---
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -58,12 +66,15 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => {
   return (
-    <div className="w-full">
-      {label && <label className="block text-xs font-medium text-slate-400 mb-1.5 ml-0.5">{label}</label>}
-      <input
-        className={`w-full bg-surface/50 border border-slate-700 text-white px-3 py-3 text-base sm:text-sm rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-slate-600 ${className}`}
-        {...props}
-      />
+    <div className="w-full group">
+      {label && <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5 ml-1 group-focus-within:text-white transition-colors">{label}</label>}
+      <div className="relative">
+        <input
+          className={`w-full bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 focus:border-white/40 text-white px-4 py-3 text-sm rounded-xl focus:outline-none focus:ring-4 focus:ring-white/5 transition-all placeholder:text-zinc-600 shadow-inner ${className}`}
+          {...props}
+        />
+        <div className="absolute inset-0 pointer-events-none rounded-xl bg-gradient-to-b from-white/5 to-transparent opacity-50" />
+      </div>
     </div>
   );
 };
@@ -73,12 +84,18 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; onC
   return (
     <motion.div
       onClick={onClick}
-      className={`bg-surface/40 backdrop-blur-sm border border-white/5 rounded-xl p-4 sm:p-6 ${className} ${onClick ? 'cursor-pointer hover:border-white/10 hover:bg-surface/60 transition-all' : ''}`}
-      initial={{ opacity: 0, y: 10 }}
+      className={`bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden ${className} ${onClick ? 'cursor-pointer hover:border-white/20 hover:bg-zinc-900/80 hover:-translate-y-1' : ''}`}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      {children}
+      {/* Glossy Top Highlight */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
+      {/* Content */}
+      <div className="relative z-10">
+        {children}
+      </div>
     </motion.div>
   );
 };
