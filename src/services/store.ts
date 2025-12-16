@@ -81,15 +81,15 @@ class Store {
     this.groups = initialGroups;
   }
 
-  addGroup(id: string, password: string) {
+  addGroup(id: string, password: string, initialProfileName: string = 'You') {
     if (this.groups.find(g => g.id === id)) return false;
     this.groups.push({
       id,
       password,
       profiles: [{
         id: `p-${Date.now()}`,
-        name: 'You',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`,
+        name: initialProfileName,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${initialProfileName}`,
         tasks: generateDailyTasks(TODAY)
       }]
     });

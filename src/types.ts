@@ -1,7 +1,9 @@
+
 export type ViewState = 
   | 'LOGIN' 
   | 'REGISTER'
   | 'ADMIN_LOGIN'
+  | 'PROFILE_SELECT'
   | 'USER_HOME' 
   | 'ADMIN_DASHBOARD';
 

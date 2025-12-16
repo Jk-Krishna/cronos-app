@@ -2,16 +2,34 @@ import { useState } from 'react';
 import type { ViewState, UserGroup } from './types';
 import Login from './views/Login';
 import UserHome from './views/UserHome';
+import ProfileSelect from './views/ProfileSelect';
 import AdminDashboard from './views/AdminDashboard';
 import { store } from './services/store';
 
 export default function App() {
   const [view, setView] = useState<ViewState>('LOGIN');
   const [activeGroup, setActiveGroup] = useState<UserGroup | null>(null);
+  const [currentUserProfileId, setCurrentUserProfileId] = useState<string>('');
 
   const handleLoginSuccess = (group: UserGroup) => {
     setActiveGroup(group);
+    setView('PROFILE_SELECT');
+  };
+
+  const handleProfileSelected = (profileId: string) => {
+    setCurrentUserProfileId(profileId);
     setView('USER_HOME');
+  };
+
+  const handleAddProfile = (name: string) => {
+    if (activeGroup) {
+        store.addProfileToGroup(activeGroup.id, name);
+        // Force refresh group data from store
+        const updatedGroup = store.getGroup(activeGroup.id);
+        if (updatedGroup) {
+            setActiveGroup({...updatedGroup});
+        }
+    }
   };
 
   const handleAdminLoginSuccess = () => {
@@ -20,46 +38,27 @@ export default function App() {
 
   const handleLogout = () => {
     setActiveGroup(null);
+    setCurrentUserProfileId('');
     setView('LOGIN');
   };
 
+  const handleSwitchProfile = () => {
+      setCurrentUserProfileId('');
+      setView('PROFILE_SELECT');
+  }
+
   return (
-    <div className="min-h-screen h-[100dvh] bg-black text-white font-sans overflow-hidden relative selection:bg-fuchsia-500/30 selection:text-fuchsia-200">
+    <div className="min-h-screen h-[100dvh] bg-black text-white font-sans overflow-hidden relative selection:bg-indigo-500/30 selection:text-indigo-200">
       
-      {/* Playful Doodles Background - Low Opacity */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-10">
-        {/* Circle Top Left */}
-        <svg className="absolute top-[10%] left-[5%] w-64 h-64 animate-float" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-           <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="0.5" fill="none" />
-           <circle cx="50" cy="50" r="30" stroke="white" strokeWidth="0.2" fill="none" strokeDasharray="4 4" />
+      {/* Minimal Background - Barely Visible Outlines */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-[0.03]">
+        <svg className="absolute top-[5%] left-[5%] w-96 h-96 animate-float" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+           <circle cx="50" cy="50" r="45" stroke="white" strokeWidth="0.5" fill="none" />
         </svg>
-
-        {/* Squiggle Top Right */}
-        <svg className="absolute top-[15%] right-[10%] w-96 h-96 animate-float" style={{animationDelay: '1s'}} viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10,100 C50,0 150,0 190,100 S50,200 10,100" stroke="white" strokeWidth="0.5" fill="none" />
-          <path d="M20,100 C60,20 140,20 180,100 S60,180 20,100" stroke="white" strokeWidth="0.2" fill="none" />
+        <svg className="absolute bottom-[5%] right-[5%] w-[30rem] h-[30rem] animate-float" style={{animationDelay: '2s'}} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+           <rect x="20" y="20" width="60" height="60" rx="20" stroke="white" strokeWidth="0.5" fill="none" transform="rotate(15 50 50)"/>
         </svg>
-
-        {/* Triangle Bottom Left */}
-        <svg className="absolute bottom-[10%] left-[10%] w-72 h-72 animate-float" style={{animationDelay: '2s'}} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="50,15 90,85 10,85" stroke="white" strokeWidth="0.5" fill="none" />
-        </svg>
-
-        {/* Hexagon Bottom Right */}
-        <svg className="absolute bottom-[20%] right-[5%] w-56 h-56 animate-float" style={{animationDelay: '3s'}} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" stroke="white" strokeWidth="0.5" fill="none" />
-        </svg>
-        
-        {/* Random Dots */}
-        <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-white rounded-full opacity-50"></div>
-        <div className="absolute top-1/4 right-1/4 w-3 h-3 bg-white rounded-full opacity-30"></div>
-        <div className="absolute bottom-1/3 right-1/2 w-1.5 h-1.5 bg-white rounded-full opacity-60"></div>
       </div>
-
-      {/* Radial Gradient Overlays for "Glossy" feel */}
-      <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-fuchsia-500/10 rounded-full blur-[100px] pointer-events-none" />
-
 
       <main className="relative z-10 w-full h-full flex flex-col">
         {view === 'LOGIN' && (
@@ -80,9 +79,20 @@ export default function App() {
           />
         )}
 
-        {view === 'USER_HOME' && activeGroup && (
+        {view === 'PROFILE_SELECT' && activeGroup && (
+          <ProfileSelect 
+            group={activeGroup} 
+            onSelect={handleProfileSelected}
+            onAddProfile={handleAddProfile}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {view === 'USER_HOME' && activeGroup && currentUserProfileId && (
           <UserHome 
             group={activeGroup} 
+            currentUserId={currentUserProfileId}
+            onSwitchProfile={handleSwitchProfile}
             onLogout={handleLogout}
           />
         )}

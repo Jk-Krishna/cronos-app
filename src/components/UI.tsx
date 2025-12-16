@@ -1,15 +1,15 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import type { HTMLMotionProps } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 // --- BUTTON ---
-type ButtonProps = Omit<React.ComponentProps<typeof motion.button>, "ref"> & {
-  children?: React.ReactNode;
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass' | 'gradient';
+interface ButtonProps extends HTMLMotionProps<"button"> {
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass';
   isLoading?: boolean;
   icon?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
-};
+}
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({ 
   children, 
@@ -20,40 +20,38 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   className = '', 
   ...props 
 }, ref) => {
-  const baseStyle = "relative inline-flex items-center justify-center font-bold tracking-tight transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl overflow-hidden group";
+  // Minimal styles: Matte, rounded, no complex shadows
+  const baseStyle = "relative inline-flex items-center justify-center font-bold tracking-tight transition-transform active:scale-95 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed rounded-full";
   
   const sizes = {
     sm: "px-4 py-2 text-xs", 
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-8 py-3 text-base",
-    xl: "px-10 py-4 text-lg",
+    md: "px-6 py-3 text-sm",
+    lg: "px-8 py-4 text-base",
+    xl: "px-10 py-5 text-lg",
   };
 
   const variants = {
-    primary: "bg-white text-black shadow-lg shadow-white/10 hover:bg-zinc-200",
-    gradient: "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/40 hover:shadow-purple-500/60 border border-white/10",
-    secondary: "bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-white/30 hover:text-white hover:bg-zinc-800",
-    danger: "bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40",
-    ghost: "bg-transparent text-zinc-400 hover:text-white hover:bg-white/5",
-    glass: "bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10",
+    primary: "bg-white text-black hover:bg-zinc-200",
+    secondary: "bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white",
+    danger: "bg-red-500/10 text-red-400 hover:bg-red-500/20",
+    ghost: "bg-transparent text-zinc-500 hover:text-white hover:bg-zinc-900",
+    glass: "bg-white/10 text-white hover:bg-white/20",
   };
 
   return (
     <motion.button
       ref={ref}
       whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.96 }}
       className={`${baseStyle} ${sizes[size]} ${variants[variant]} ${className}`}
       disabled={isLoading || props.disabled}
       {...props}
     >
-      <span className="relative z-10 flex items-center">
+      <span className="flex items-center">
         {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
         {!isLoading && icon && <span className="mr-2 flex items-center">{icon}</span>}
-        {children}
+        {children as React.ReactNode}
       </span>
-      {/* Gloss Effect */}
-      {variant !== 'ghost' && <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />}
     </motion.button>
   );
 });
@@ -66,15 +64,12 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Input: React.FC<InputProps> = ({ label, className = '', ...props }) => {
   return (
-    <div className="w-full group">
-      {label && <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1.5 ml-1 group-focus-within:text-white transition-colors">{label}</label>}
-      <div className="relative">
-        <input
-          className={`w-full bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 focus:border-white/40 text-white px-4 py-3 text-sm rounded-xl focus:outline-none focus:ring-4 focus:ring-white/5 transition-all placeholder:text-zinc-600 shadow-inner ${className}`}
-          {...props}
-        />
-        <div className="absolute inset-0 pointer-events-none rounded-xl bg-gradient-to-b from-white/5 to-transparent opacity-50" />
-      </div>
+    <div className="w-full">
+      {label && <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2 ml-1">{label}</label>}
+      <input
+        className={`w-full bg-zinc-900 border-2 border-transparent focus:border-indigo-500 text-white px-5 py-4 text-sm rounded-3xl focus:outline-none transition-colors placeholder:text-zinc-600 ${className}`}
+        {...props}
+      />
     </div>
   );
 };
@@ -84,18 +79,13 @@ export const Card: React.FC<{ children: React.ReactNode; className?: string; onC
   return (
     <motion.div
       onClick={onClick}
-      className={`bg-zinc-900/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl relative overflow-hidden ${className} ${onClick ? 'cursor-pointer hover:border-white/20 hover:bg-zinc-900/80 hover:-translate-y-1' : ''}`}
-      initial={{ opacity: 0, y: 20 }}
+      className={`bg-zinc-900/50 border border-zinc-800 rounded-3xl p-6 ${className} ${onClick ? 'cursor-pointer hover:bg-zinc-900 hover:border-zinc-700' : ''}`}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.2 }}
     >
-      {/* Glossy Top Highlight */}
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" />
-      {/* Content */}
-      <div className="relative z-10">
-        {children}
-      </div>
+      {children}
     </motion.div>
   );
 };
