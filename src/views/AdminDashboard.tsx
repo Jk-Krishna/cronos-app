@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { LogOut, UserPlus, Clock, Users, ChevronRight, Plus, X, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, UserPlus, Clock, Users, Plus, X } from 'lucide-react';
 import { Button, Input, Card } from '../components/UI';
 import type { UserGroup, UserProfile } from '../types';
 import { DEFAULT_TASKS } from '../services/store';
@@ -15,45 +15,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ store, onLogout }) => {
   const [activeView, setActiveView] = useState<'USERS' | 'DEFAULTS'>('USERS');
   const [selectedUserData, setSelectedUserData] = useState<{group: UserGroup, profile: UserProfile} | null>(null);
   
-  // Add User State
+  // User Management State
   const [isAddingUser, setIsAddingUser] = useState(false);
-  const [isExistingGroup, setIsExistingGroup] = useState<boolean | null>(null); // null = not selected yet
-  
+  const [isExistingGroup, setIsExistingGroup] = useState<boolean | null>(null); // Explicit toggle
   const [targetGroupId, setTargetGroupId] = useState('');
   const [newGroupPassword, setNewGroupPassword] = useState('');
   const [newProfileName, setNewProfileName] = useState('');
 
-  // Default Tasks State
+  // Defaults State
   const [defaults, setDefaults] = useState(DEFAULT_TASKS);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('');
 
   const handleCreateUser = () => {
-    if (!newProfileName) {
-        alert("Please enter a name");
-        return;
-    }
-
-    if (isExistingGroup) {
-        if (!targetGroupId) {
-             alert("Please select a group ID");
-             return;
-        }
-        store.addProfileToGroup(targetGroupId, newProfileName);
+    if (!newProfileName) { alert("Enter a name"); return; }
+    
+    if (isExistingGroup === true) {
+      if (!targetGroupId) { alert("Select a User ID"); return; }
+      store.addProfileToGroup(targetGroupId, newProfileName);
     } else {
-        if (!targetGroupId || !newGroupPassword) {
-            alert("Please fill in Group ID and Password");
-            return;
-        }
-        const success = store.addGroup(targetGroupId, newGroupPassword, newProfileName);
-        if (!success) {
-            alert("Group ID already exists");
-            return;
-        }
+      if (!targetGroupId || !newGroupPassword) { alert("Provide ID and Key"); return; }
+      const success = store.addGroup(targetGroupId, newGroupPassword, newProfileName);
+      if (!success) { alert("This ID is already taken"); return; }
     }
-
-    // Reset Form
+    
+    // Reset
     setIsAddingUser(false);
     setIsExistingGroup(null);
     setTargetGroupId('');
@@ -61,48 +48,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ store, onLogout }) => {
     setNewProfileName('');
   };
 
-  const handleDeleteUser = (groupId: string, profileId: string, profileName: string) => {
-    if (window.confirm(`Remove ${profileName}?`)) {
-        store.deleteProfileFromGroup(groupId, profileId);
-        setActiveView(prev => prev); // Force re-render
-    }
-  };
-
-  const handleTimeChange = (defId: string, newTime: string) => {
-    store.updateDefaultTaskTime(defId, newTime);
-    setDefaults([...DEFAULT_TASKS]);
-  };
-
-  const handleAddDefaultTask = () => {
-      if(!newTaskTitle || !newTaskTime) return;
-      store.addDefaultTask(newTaskTitle, newTaskTime);
-      setDefaults([...DEFAULT_TASKS]);
-      setIsAddingTask(false);
-      setNewTaskTitle('');
-      setNewTaskTime('');
-  };
-
   const handleAdminAddTask = (title: string, time: string) => {
     if (selectedUserData) {
-        store.addTaskToProfile(selectedUserData.group.id, selectedUserData.profile.id, title, time);
-        const updatedGroup = store.getGroup(selectedUserData.group.id);
-        const updatedProfile = updatedGroup?.profiles.find((p: UserProfile) => p.id === selectedUserData.profile.id);
-        if (updatedGroup && updatedProfile) {
-            setSelectedUserData({ group: updatedGroup, profile: updatedProfile });
-        }
+      store.addTaskToProfile(selectedUserData.group.id, selectedUserData.profile.id, title, time);
+      const updatedGroup = store.getGroup(selectedUserData.group.id);
+      const updatedProfile = updatedGroup?.profiles.find((p: UserProfile) => p.id === selectedUserData.profile.id);
+      if (updatedGroup && updatedProfile) setSelectedUserData({ group: updatedGroup, profile: updatedProfile });
     }
-  }
+  };
   
   const handleAdminDeleteTask = (taskId: string) => {
-     if (selectedUserData) {
-        store.deleteTaskFromProfile(selectedUserData.group.id, selectedUserData.profile.id, taskId);
-        const updatedGroup = store.getGroup(selectedUserData.group.id);
-        const updatedProfile = updatedGroup?.profiles.find((p: UserProfile) => p.id === selectedUserData.profile.id);
-        if (updatedGroup && updatedProfile) {
-            setSelectedUserData({ group: updatedGroup, profile: updatedProfile });
-        }
-     }
-  }
+    if (selectedUserData) {
+      store.deleteTaskFromProfile(selectedUserData.group.id, selectedUserData.profile.id, taskId);
+      const updatedGroup = store.getGroup(selectedUserData.group.id);
+      const updatedProfile = updatedGroup?.profiles.find((p: UserProfile) => p.id === selectedUserData.profile.id);
+      if (updatedGroup && updatedProfile) setSelectedUserData({ group: updatedGroup, profile: updatedProfile });
+    }
+  };
+
+  const MDiv = motion.div as any;
 
   if (selectedUserData) {
     return (
@@ -119,141 +83,115 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ store, onLogout }) => {
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden">
       <nav className="px-6 py-6 flex items-center justify-between z-20 flex-shrink-0">
-        <h1 className="text-xl font-black text-white tracking-tighter">Console.</h1>
+        <h1 className="text-xl font-black text-white tracking-tighter uppercase">Console.</h1>
         <Button variant="ghost" size="sm" onClick={onLogout} className="text-zinc-500 hover:text-white">
           <LogOut size={20} />
         </Button>
       </nav>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Minimal Sidebar */}
-        <aside className="w-64 p-6 hidden md:flex flex-col gap-1 z-10">
+        <aside className="w-64 p-6 hidden md:flex flex-col gap-1 z-10 border-r border-zinc-900">
           <button 
-            onClick={() => setActiveView('USERS')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-full text-sm font-bold transition-all ${activeView === 'USERS' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}
+            onClick={() => setActiveView('USERS')} 
+            className={`flex items-center gap-3 px-6 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'USERS' ? 'bg-white text-black' : 'text-zinc-600 hover:text-white'}`}
           >
-            <Users size={18} /> Profiles
+            <Users size={14} /> Profiles
           </button>
           <button 
-             onClick={() => setActiveView('DEFAULTS')}
-             className={`flex items-center gap-3 px-4 py-3 rounded-full text-sm font-bold transition-all ${activeView === 'DEFAULTS' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white'}`}
+            onClick={() => setActiveView('DEFAULTS')} 
+            className={`flex items-center gap-3 px-6 py-4 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${activeView === 'DEFAULTS' ? 'bg-white text-black' : 'text-zinc-600 hover:text-white'}`}
           >
-            <Clock size={18} /> Schedules
+            <Clock size={14} /> Routine
           </button>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 pb-32">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 pb-32 no-scrollbar">
           {activeView === 'USERS' && (
             <div className="max-w-5xl mx-auto">
               <div className="flex justify-between items-center mb-10">
-                <h2 className="text-3xl font-black text-white">Users</h2>
-                <Button onClick={() => setIsAddingUser(true)} icon={<UserPlus size={18} />} size="md" variant="primary">New</Button>
+                <h2 className="text-3xl font-black text-white">Clients</h2>
+                <Button onClick={() => setIsAddingUser(true)} icon={<UserPlus size={18} />} size="md" variant="primary">New Client</Button>
               </div>
 
-              {isAddingUser && (
-                <Card className="mb-12 bg-zinc-900/80 border border-zinc-700">
-                  <div className="flex items-center justify-between mb-6">
-                     <h3 className="text-xl font-bold text-white">Create User</h3>
-                     <Button variant="ghost" size="sm" onClick={() => { setIsAddingUser(false); setIsExistingGroup(null); }}><X size={20}/></Button>
-                  </div>
-                  
-                  <div className="space-y-8">
-                      {/* Step 1: Existing Group Toggle */}
-                      <div className="flex flex-col gap-3">
-                          <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider ml-1">Existing User ID?</label>
-                          <div className="flex gap-4">
-                              <button 
-                                onClick={() => { setIsExistingGroup(true); setTargetGroupId(''); }}
-                                className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${isExistingGroup === true ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-zinc-500'}`}
-                              >
-                                YES
-                              </button>
-                              <button 
-                                onClick={() => { setIsExistingGroup(false); setTargetGroupId(''); }}
-                                className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${isExistingGroup === false ? 'bg-white text-black border-white' : 'bg-transparent text-zinc-500 border-zinc-700 hover:border-zinc-500'}`}
-                              >
-                                NO
-                              </button>
-                          </div>
+              <AnimatePresence>
+                {isAddingUser && (
+                  <Card className="mb-12 bg-zinc-950 border border-zinc-800 shadow-2xl relative">
+                    <button onClick={() => { setIsAddingUser(false); setIsExistingGroup(null); }} className="absolute top-8 right-8 text-zinc-600 hover:text-white"><X size={20} /></button>
+                    <h3 className="text-xl font-black text-white mb-8 uppercase tracking-tighter">New Assignment</h3>
+                    
+                    <div className="space-y-8">
+                      <div>
+                        <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-4">Existing User ID?</label>
+                        <div className="flex gap-4">
+                          <button 
+                            onClick={() => setIsExistingGroup(true)} 
+                            className={`flex-1 py-4 rounded-3xl font-black text-[10px] tracking-widest transition-all border ${isExistingGroup === true ? 'bg-white text-black border-white shadow-lg' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-700'}`}
+                          >
+                            YES
+                          </button>
+                          <button 
+                            onClick={() => setIsExistingGroup(false)} 
+                            className={`flex-1 py-4 rounded-3xl font-black text-[10px] tracking-widest transition-all border ${isExistingGroup === false ? 'bg-white text-black border-white shadow-lg' : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-700'}`}
+                          >
+                            NO
+                          </button>
+                        </div>
                       </div>
 
-                      {/* Step 2: Dynamic Fields based on selection */}
-                      {isExistingGroup === true && (
-                          <div className="space-y-6 animate-in fade-in slide-in-from-top-4">
-                               <div className="flex flex-col gap-2">
-                                   <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider ml-1">Select User ID</label>
-                                   <div className="relative">
-                                       <select 
-                                         className="w-full appearance-none bg-black border border-zinc-700 text-white text-base font-bold rounded-2xl p-4 focus:border-white focus:outline-none transition-colors"
-                                         value={targetGroupId}
-                                         onChange={e => setTargetGroupId(e.target.value)}
-                                       >
-                                         <option value="">Select...</option>
-                                         {store.groups.map((g: UserGroup) => (
-                                           <option key={g.id} value={g.id}>{g.id}</option>
-                                         ))}
-                                       </select>
-                                       <ChevronRight size={20} className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 rotate-90" />
-                                   </div>
-                               </div>
-                               <Input label="Enter Name" placeholder="e.g. Alex" value={newProfileName} onChange={e => setNewProfileName(e.target.value)} />
-                               <div className="flex justify-end pt-2">
-                                  <Button onClick={handleCreateUser} size="lg">Create User</Button>
-                               </div>
-                          </div>
-                      )}
-
-                      {isExistingGroup === false && (
-                          <div className="space-y-6 animate-in fade-in slide-in-from-top-4">
-                              <Input label="Enter New User ID" placeholder="e.g. family_smith" value={targetGroupId} onChange={e => setTargetGroupId(e.target.value)} />
-                              <Input label="Set Password" type="password" placeholder="••••••" value={newGroupPassword} onChange={e => setNewGroupPassword(e.target.value)} />
-                              <Input label="Enter Name" placeholder="e.g. John" value={newProfileName} onChange={e => setNewProfileName(e.target.value)} />
-                              <div className="flex justify-end pt-2">
-                                  <Button onClick={handleCreateUser} size="lg">Create User</Button>
-                               </div>
-                          </div>
-                      )}
-                  </div>
-                </Card>
-              )}
+                      <AnimatePresence mode="wait">
+                        {isExistingGroup !== null && (
+                          <MDiv initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                            {isExistingGroup ? (
+                              <div className="flex flex-col gap-2">
+                                <label className="text-[10px] font-black text-zinc-600 uppercase tracking-widest ml-1">Select Group ID</label>
+                                <select 
+                                  className="w-full bg-zinc-900 border-2 border-transparent focus:border-white text-white px-6 py-4 text-sm rounded-3xl outline-none transition-colors appearance-none" 
+                                  value={targetGroupId} 
+                                  onChange={e => setTargetGroupId(e.target.value)}
+                                >
+                                  <option value="">Choose ID...</option>
+                                  {store.groups.map((g: UserGroup) => <option key={g.id} value={g.id}>{g.id}</option>)}
+                                </select>
+                              </div>
+                            ) : (
+                              <>
+                                <Input label="New User ID" placeholder="e.g. smith_fam" value={targetGroupId} onChange={e => setTargetGroupId(e.target.value)} />
+                                <Input label="Set Secret Key" type="password" placeholder="••••" value={newGroupPassword} onChange={e => setNewGroupPassword(e.target.value)} />
+                              </>
+                            )}
+                            <Input label="Enter Name" placeholder="e.g. Alice" value={newProfileName} onChange={e => setNewProfileName(e.target.value)} />
+                            <Button onClick={handleCreateUser} className="w-full mt-4" size="lg">Create User</Button>
+                          </MDiv>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </Card>
+                )}
+              </AnimatePresence>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                 {store.groups.map((group: UserGroup) => (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    key={group.id} 
-                    className="bg-zinc-900 rounded-[2.5rem] p-8 border border-zinc-800"
-                  >
+                  <MDiv key={group.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-zinc-900/50 rounded-[3rem] p-10 border border-zinc-800/50 hover:border-zinc-700 transition-all">
                     <div className="flex items-start justify-between mb-8">
                       <div>
-                        <h3 className="text-2xl font-black text-white mb-1">{group.id}</h3>
-                        <div className="text-zinc-500 font-mono text-xs">PIN: {group.password}</div>
+                        <h3 className="text-2xl font-black text-white mb-1 uppercase tracking-tighter">{group.id}</h3>
+                        <div className="text-zinc-600 font-mono text-[10px] uppercase tracking-widest">Key: {group.password}</div>
                       </div>
-                      <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-white font-bold text-sm">
-                        {group.profiles.length}
-                      </div>
+                      <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-white font-black text-xs">{group.profiles.length}</div>
                     </div>
-                    
                     <div className="flex flex-wrap gap-3">
                       {group.profiles.map(p => (
                         <div 
                           key={p.id} 
-                          className="flex items-center gap-3 bg-black rounded-full pl-2 pr-4 py-2 border border-zinc-800 cursor-pointer hover:border-zinc-600 transition-colors"
+                          className="flex items-center gap-3 bg-black rounded-full pl-2 pr-5 py-2 border border-zinc-800 cursor-pointer hover:border-white transition-all group" 
                           onClick={() => setSelectedUserData({ group, profile: p })}
                         >
-                          <img src={p.avatar} className="w-8 h-8 rounded-full bg-zinc-800" />
-                          <span className="text-sm text-white font-bold">{p.name}</span>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); handleDeleteUser(group.id, p.id, p.name); }}
-                            className="ml-1 text-zinc-600 hover:text-red-500"
-                          >
-                             <Trash2 size={14} />
-                          </button>
+                          <img src={p.avatar} className="w-8 h-8 rounded-full bg-zinc-800" alt={p.name} />
+                          <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500 group-hover:text-white">{p.name}</span>
                         </div>
                       ))}
                     </div>
-                  </motion.div>
+                  </MDiv>
                 ))}
               </div>
             </div>
@@ -262,35 +200,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ store, onLogout }) => {
           {activeView === 'DEFAULTS' && (
             <div className="max-w-4xl mx-auto">
                <div className="flex items-center justify-between mb-10">
-                 <h2 className="text-3xl font-black text-white">Defaults</h2>
-                 <Button onClick={() => setIsAddingTask(!isAddingTask)} icon={<Plus size={18} />} variant="primary">New</Button>
+                 <h2 className="text-3xl font-black text-white">Daily Routine</h2>
+                 <Button onClick={() => setIsAddingTask(!isAddingTask)} icon={<Plus size={18} />} variant="primary">New Schedule</Button>
                </div>
-               
                {isAddingTask && (
                    <Card className="mb-10">
-                       <div className="flex flex-col sm:flex-row gap-4 items-end">
-                           <Input placeholder="Title" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} />
-                           <Input type="time" value={newTaskTime} onChange={e => setNewTaskTime(e.target.value)} className="sm:w-48" />
-                           <Button onClick={handleAddDefaultTask} size="lg">Add</Button>
-                       </div>
+                     <div className="flex flex-col sm:flex-row gap-4 items-end">
+                       <Input placeholder="Title" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} />
+                       <Input type="time" value={newTaskTime} onChange={e => setNewTaskTime(e.target.value)} className="sm:w-48" />
+                       <Button onClick={() => { store.addDefaultTask(newTaskTitle, newTaskTime); setDefaults([...DEFAULT_TASKS]); setIsAddingTask(false); }} size="lg">Add</Button>
+                     </div>
                    </Card>
                )}
-
-               <div className="space-y-3">
+               <div className="space-y-4">
                  {defaults.map((task) => (
-                   <div key={task.id} className="bg-zinc-900 rounded-3xl p-6 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                       <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-500">
-                           <Clock size={20} />
-                       </div>
-                       <h4 className="text-lg font-bold text-white">{task.title}</h4>
+                   <div key={task.id} className="bg-zinc-900 rounded-[2rem] p-8 flex items-center justify-between border border-zinc-800/30">
+                     <div className="flex items-center gap-6">
+                       <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center text-zinc-500"><Clock size={24} /></div>
+                       <h4 className="text-xl font-black text-white">{task.title}</h4>
                      </div>
                      <input 
                        type="time" 
                        value={task.defaultTime} 
-                       onChange={(e) => handleTimeChange(task.id, e.target.value)}
-                       className="bg-black text-white rounded-xl px-4 py-3 font-bold text-lg outline-none border border-zinc-800 focus:border-white"
-                       style={{ colorScheme: 'dark' }}
+                       onChange={(e) => { store.updateDefaultTaskTime(task.id, e.target.value); setDefaults([...DEFAULT_TASKS]); }} 
+                       className="bg-black text-white rounded-2xl px-6 py-4 font-black text-xl outline-none border border-zinc-800 focus:border-white shadow-inner" 
+                       style={{ colorScheme: 'dark' }} 
                      />
                    </div>
                  ))}

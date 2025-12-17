@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Plus, X } from 'lucide-react';
 import type { UserGroup } from '../types';
 import { Button, Input } from '../components/UI';
 
@@ -23,63 +23,79 @@ const ProfileSelect: React.FC<ProfileSelectProps> = ({ group, onSelect, onAddPro
     }
   };
 
+  const MDiv = motion.div as any;
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 relative animate-in fade-in duration-500">
-      <div className="absolute top-6 right-6 z-30">
-         <Button variant="ghost" onClick={onLogout}>Sign Out</Button>
+    <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
+      <div className="absolute top-8 right-8 z-30">
+         <Button variant="ghost" onClick={onLogout} size="sm" className="text-zinc-600 hover:text-white">Sign Out</Button>
       </div>
 
-      <div className="max-w-5xl w-full text-center z-10">
-        <h1 className="text-3xl sm:text-5xl font-black text-white mb-12 tracking-tight">Who is working?</h1>
+      <div className="max-w-6xl w-full text-center z-10">
+        <h1 className="text-4xl sm:text-7xl font-black text-white mb-20 tracking-tighter">Who is working?</h1>
         
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
+        <div className="flex flex-wrap items-center justify-center gap-10 sm:gap-16">
           {group.profiles.map((profile, i) => (
-             <motion.div 
+             <MDiv 
                key={profile.id}
-               initial={{ opacity: 0, scale: 0.5 }}
+               initial={{ opacity: 0, scale: 0.8 }}
                animate={{ opacity: 1, scale: 1 }}
-               transition={{ delay: i * 0.1 }}
+               transition={{ delay: i * 0.05 }}
                whileHover={{ scale: 1.05 }}
                whileTap={{ scale: 0.95 }}
                onClick={() => onSelect(profile.id)}
-               className="group flex flex-col items-center gap-4 cursor-pointer"
+               className="group flex flex-col items-center gap-8 cursor-pointer"
              >
-                <div className="w-24 h-24 sm:w-40 sm:h-40 rounded-3xl overflow-hidden border-4 border-transparent group-hover:border-white transition-all shadow-2xl">
-                   <img src={profile.avatar} className="w-full h-full object-cover bg-zinc-800" alt={profile.name} />
+                <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-[3rem] overflow-hidden border-4 border-transparent group-hover:border-white transition-all shadow-2xl bg-zinc-950">
+                   <img src={profile.avatar} className="w-full h-full object-cover" alt={profile.name} />
                 </div>
-                <span className="text-lg sm:text-xl font-bold text-zinc-400 group-hover:text-white transition-colors">{profile.name}</span>
-             </motion.div>
+                <span className="text-xl font-black text-zinc-600 group-hover:text-white transition-colors uppercase tracking-widest">{profile.name}</span>
+             </MDiv>
           ))}
 
-          {/* Add Profile Button */}
-           <motion.div 
-             initial={{ opacity: 0, scale: 0.5 }}
+          <MDiv 
+             initial={{ opacity: 0, scale: 0.8 }}
              animate={{ opacity: 1, scale: 1 }}
-             transition={{ delay: group.profiles.length * 0.1 }}
+             transition={{ delay: group.profiles.length * 0.05 }}
              whileHover={{ scale: 1.05 }}
              whileTap={{ scale: 0.95 }}
              onClick={() => setIsAdding(true)}
-             className="group flex flex-col items-center gap-4 cursor-pointer"
+             className="group flex flex-col items-center gap-8 cursor-pointer"
            >
-              <div className="w-24 h-24 sm:w-40 sm:h-40 rounded-3xl bg-zinc-900/50 border-2 border-dashed border-zinc-700 flex items-center justify-center group-hover:bg-zinc-800 group-hover:border-zinc-500 transition-all backdrop-blur-sm">
-                 <Plus size={40} className="text-zinc-600 group-hover:text-zinc-300" />
+              <div className="w-32 h-32 sm:w-48 sm:h-48 rounded-[3rem] bg-zinc-900/40 border-2 border-dashed border-zinc-800 flex items-center justify-center group-hover:bg-zinc-900 group-hover:border-white transition-all backdrop-blur-sm">
+                 <Plus size={54} className="text-zinc-700 group-hover:text-white" />
               </div>
-              <span className="text-lg sm:text-xl font-bold text-zinc-500 group-hover:text-zinc-300">Add Profile</span>
-           </motion.div>
+              <span className="text-xl font-black text-zinc-700 group-hover:text-white transition-colors uppercase tracking-widest">Add Profile</span>
+           </MDiv>
         </div>
 
-        {isAdding && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-zinc-900 p-8 rounded-[2rem] border border-zinc-800 w-full max-w-sm shadow-2xl">
-                <h3 className="text-2xl font-black text-white mb-6">New User</h3>
-                <Input placeholder="Enter Name" value={newName} onChange={e => setNewName(e.target.value)} autoFocus className="mb-6" />
-                <div className="flex gap-4">
-                   <Button variant="ghost" onClick={() => setIsAdding(false)} className="flex-1">Cancel</Button>
-                   <Button onClick={handleAdd} className="flex-1" variant="primary">Create User</Button>
-                </div>
-             </motion.div>
-          </div>
-        )}
+        <AnimatePresence>
+          {isAdding && (
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-2xl z-50 flex items-center justify-center p-6">
+               <MDiv 
+                 initial={{ scale: 0.9, opacity: 0 }} 
+                 animate={{ scale: 1, opacity: 1 }}
+                 exit={{ scale: 0.9, opacity: 0 }}
+                 className="bg-zinc-950 p-12 rounded-[4rem] border border-zinc-800/50 w-full max-w-md shadow-[0_0_100px_rgba(255,255,255,0.05)] relative"
+               >
+                  <button onClick={() => setIsAdding(false)} className="absolute top-10 right-10 text-zinc-600 hover:text-white transition-colors"><X size={24} /></button>
+                  <h3 className="text-4xl font-black text-white mb-10 tracking-tighter">New User</h3>
+                  <Input 
+                    label="Enter Name" 
+                    placeholder="e.g. Alex" 
+                    value={newName} 
+                    onChange={e => setNewName(e.target.value)} 
+                    autoFocus 
+                    className="mb-10" 
+                  />
+                  <div className="flex flex-col gap-4">
+                     <Button onClick={handleAdd} className="w-full" size="lg" variant="primary">Create User</Button>
+                     <Button variant="ghost" onClick={() => setIsAdding(false)} className="w-full text-zinc-600" size="md">Cancel</Button>
+                  </div>
+               </MDiv>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

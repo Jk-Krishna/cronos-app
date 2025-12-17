@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Input } from '../components/UI';
-import { ADMIN_CREDS } from '../services/store';
 
 interface LoginProps {
   mode: 'USER' | 'ADMIN';
@@ -12,10 +11,10 @@ interface LoginProps {
   store: any;
 }
 
-type AuthMode = 'LOGIN' | 'REGISTER' | 'RESET';
+type AuthSubMode = 'LOGIN' | 'REGISTER' | 'RECOVER';
 
 const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, store }) => {
-  const [authMode, setAuthMode] = useState<AuthMode>('LOGIN'); 
+  const [subMode, setSubMode] = useState<AuthSubMode>('LOGIN');
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,45 +30,76 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
       setLoading(false);
       
       if (mode === 'ADMIN') {
-        if (userId === ADMIN_CREDS.id && password === ADMIN_CREDS.password) {
+        if (subMode === 'REGISTER') {
+          if (password !== confirmPassword) {
+            setError("Passwords don't match");
+            return;
+          }
+          const success = store.addAdmin(userId, password);
+          if (success) {
+            alert('Admin account created successfully.');
+            setSubMode('LOGIN');
+          } else {
+            setError('Admin ID already exists');
+          }
+          return;
+        }
+
+        if (subMode === 'RECOVER') {
+          if (password !== confirmPassword) {
+            setError("Passwords don't match");
+            return;
+          }
+          const success = store.resetAdminPassword(userId, password);
+          if (success) {
+            alert('Admin password updated successfully.');
+            setSubMode('LOGIN');
+          } else {
+            setError('Admin ID not found');
+          }
+          return;
+        }
+
+        const admin = store.validateAdmin(userId, password);
+        if (admin) {
           onLogin();
         } else {
-          setError('Admin Access Denied');
+          setError('Admin access denied. Check credentials.');
         }
         return;
       }
 
-      if (authMode === 'RESET') {
+      // User Mode
+      if (subMode === 'REGISTER') {
+        if (password !== confirmPassword) {
+          setError("Passwords don't match");
+          return;
+        }
+        if (userId.length < 3) {
+          setError("User ID must be at least 3 characters");
+          return;
+        }
+        const success = store.addGroup(userId, password);
+        if (success) {
+          alert('Account created. You can now sign in.');
+          setSubMode('LOGIN');
+        } else {
+          setError('This ID is already taken');
+        }
+        return;
+      }
+
+      if (subMode === 'RECOVER') {
         if (password !== confirmPassword) {
           setError("Passwords don't match");
           return;
         }
         const success = store.resetGroupPassword(userId, password);
         if (success) {
-          alert('Key updated.');
-          setAuthMode('LOGIN');
-          setPassword('');
-          setConfirmPassword('');
+          alert('Secret key updated successfully.');
+          setSubMode('LOGIN');
         } else {
-          setError('User ID not found');
-        }
-        return;
-      }
-
-      if (authMode === 'REGISTER') {
-        if (password !== confirmPassword) {
-          setError("Passwords don't match");
-          return;
-        }
-        if (userId.length < 3) {
-          setError("ID is too short");
-          return;
-        }
-        const success = store.addGroup(userId, password);
-        if (success) {
-          setAuthMode('LOGIN');
-        } else {
-          setError('This ID is taken');
+          setError('User ID not found in system');
         }
         return;
       }
@@ -78,44 +108,57 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
       if (group && group.password === password) {
         onLogin(group);
       } else {
-        setError('Incorrect ID or Password');
+        setError('Incorrect ID or Secret Key');
       }
-    }, 500);
+    }, 600);
   };
+
+  const getTitle = () => {
+    if (mode === 'ADMIN') {
+      if (subMode === 'REGISTER') return 'Create Admin';
+      if (subMode === 'RECOVER') return 'Admin Recovery';
+      return 'Console.';
+    }
+    if (subMode === 'REGISTER') return 'New Account';
+    if (subMode === 'RECOVER') return 'Reset Key';
+    return 'Cronos.';
+  };
+
+  const getSubtitle = () => {
+    if (mode === 'ADMIN') return 'System Authority';
+    if (subMode === 'REGISTER') return 'Join the network';
+    return 'Task Manager';
+  };
+
+  const MDiv = motion.div as any;
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-      
-      {/* Top Actions */}
       {mode === 'USER' && (
         <div className="absolute top-6 right-6 z-20">
           <Button variant="ghost" size="sm" onClick={onAdminClick}>
-             Admin
+            Switch to Admin
           </Button>
         </div>
       )}
 
       {mode === 'ADMIN' && (
         <div className="absolute top-6 left-6 z-20">
-           <Button variant="ghost" onClick={onBack} size="sm">
+          <Button variant="ghost" onClick={() => { if(subMode !== 'LOGIN') setSubMode('LOGIN'); else onBack?.(); }} size="sm">
             <ArrowLeft size={16} className="mr-2" /> Back
           </Button>
         </div>
       )}
 
-      <motion.div
-        key={authMode} 
+      <MDiv
+        key={`${mode}-${subMode}`} 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-[360px] z-10"
       >
         <div className="text-center mb-10">
-            <h1 className="text-5xl font-black text-white tracking-tighter mb-2">
-              Cronos.
-            </h1>
-            <p className="text-zinc-500 font-medium">
-              {mode === 'ADMIN' ? 'System Control' : (authMode === 'REGISTER' ? 'New Account' : 'Task Manager')}
-            </p>
+          <h1 className="text-5xl font-black text-white tracking-tighter mb-2">{getTitle()}</h1>
+          <p className="text-zinc-500 font-medium uppercase tracking-widest text-[10px]">{getSubtitle()}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -126,16 +169,15 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
             required
             autoFocus
           />
-          
           <Input 
             type="password" 
-            placeholder="Secret Key" 
+            placeholder={subMode === 'REGISTER' ? "Create Secret Key" : (subMode === 'RECOVER' ? "New Secret Key" : "Secret Key")} 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
-          {(authMode === 'REGISTER' || authMode === 'RESET') && (
+          {subMode !== 'LOGIN' && (
             <Input 
               type="password" 
               placeholder="Confirm Key" 
@@ -146,32 +188,27 @@ const Login: React.FC<LoginProps> = ({ mode, onLogin, onAdminClick, onBack, stor
           )}
 
           {error && (
-            <div className="text-red-400 text-sm font-bold text-center">
+            <div className="text-red-400 text-xs font-bold text-center bg-red-500/10 py-2 rounded-xl border border-red-500/20">
               {error}
             </div>
           )}
 
           <Button type="submit" isLoading={loading} variant="primary" className="w-full" size="lg">
-            {mode === 'ADMIN' ? 'Enter' : 
-              (authMode === 'REGISTER' ? 'Sign Up' : 
-              (authMode === 'RESET' ? 'Reset' : 'Sign In'))}
+            {subMode === 'LOGIN' ? 'Sign In' : (subMode === 'REGISTER' ? 'Register Account' : 'Update Key')}
           </Button>
         </form>
 
-        {mode === 'USER' && (
-            <div className="mt-8 flex justify-center gap-6 text-sm font-bold text-zinc-500">
-              {authMode === 'LOGIN' && (
-                <>
-                  <button onClick={() => { setAuthMode('RESET'); setError(''); }} className="hover:text-white">Forgot?</button>
-                  <button onClick={() => { setAuthMode('REGISTER'); setError(''); }} className="hover:text-white">Create ID</button>
-                </>
-              )}
-              {(authMode === 'REGISTER' || authMode === 'RESET') && (
-                <button onClick={() => { setAuthMode('LOGIN'); setError(''); }} className="hover:text-white">Cancel</button>
-              )}
-            </div>
-        )}
-      </motion.div>
+        <div className="mt-8 flex justify-center gap-6 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+          {subMode === 'LOGIN' ? (
+            <>
+              <button onClick={() => { setSubMode('RECOVER'); setError(''); }} className="hover:text-white transition-colors">Forgot Credentials?</button>
+              <button onClick={() => { setSubMode('REGISTER'); setError(''); }} className="hover:text-white transition-colors">Create Account</button>
+            </>
+          ) : (
+            <button onClick={() => { setSubMode('LOGIN'); setError(''); }} className="hover:text-white transition-colors">Cancel</button>
+          )}
+        </div>
+      </MDiv>
     </div>
   );
 };
